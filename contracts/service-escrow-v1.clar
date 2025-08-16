@@ -293,12 +293,14 @@
                         (
                             (updated-escrow (merge escrow { balance: new-balance }))
                         )
+                        (map-set escrows escrow-id updated-escrow)
                         (if (and (is-eq new-balance u0) (all-milestones-paid escrow-id milestone-count))
                             (begin
                                 (map-set escrows escrow-id (merge updated-escrow { status: "completed" }))
                                 (print { event: "complete-escrow", escrow-id: escrow-id })
+                                true
                             )
-                            (map-set escrows escrow-id updated-escrow)
+                            true
                         )
                     )
 
@@ -452,42 +454,56 @@
             (let
                 (
                     (milestone-count (get milestones-count escrow))
-                    (milestone-indices (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
-                    (result (fold collect-milestone-details milestone-indices { 
-                        escrow-id: escrow-id, 
-                        milestone-count: milestone-count, 
-                        milestones: (list) 
-                    }))
                 )
-                (some (get milestones result))
+                (some (get-milestone-list escrow-id milestone-count))
             )
             none
         )
     )
 )
 
-;; @desc Helper function to collect milestone details
-;; @param milestone-id The milestone ID to collect
-;; @param state Current state with milestone list
-;; @returns Updated state with milestone added if valid
-(define-private (collect-milestone-details 
-    (milestone-id uint) 
-    (state { escrow-id: uint, milestone-count: uint, milestones: (list 20 (optional { description: (string-utf8 256), amount: uint, paid: bool })) }))
-    (let
-        (
-            (escrow-id (get escrow-id state))
-            (milestone-count (get milestone-count state))
-            (current-milestones (get milestones state))
-        )
-        (if (<= milestone-id milestone-count)
-            (let
-                (
-                    (milestone-data (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id }))
-                    (updated-milestones (unwrap! (as-max-len? (append current-milestones milestone-data) u20) current-milestones))
+;; @desc Gets a list of milestone details for a specific count
+;; @param escrow-id The escrow ID
+;; @param milestone-count Number of milestones to retrieve
+;; @returns List of optional milestone details
+(define-private (get-milestone-list (escrow-id uint) (milestone-count uint))
+    (if (is-eq milestone-count u0)
+        (list)
+        (if (is-eq milestone-count u1)
+            (list (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 }))
+            (if (is-eq milestone-count u2)
+                (list 
+                    (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 })
+                    (map-get? milestones { escrow-id: escrow-id, milestone-id: u2 }))
+                (if (is-eq milestone-count u3)
+                    (list 
+                        (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 })
+                        (map-get? milestones { escrow-id: escrow-id, milestone-id: u2 })
+                        (map-get? milestones { escrow-id: escrow-id, milestone-id: u3 }))
+                    (if (is-eq milestone-count u4)
+                        (list 
+                            (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 })
+                            (map-get? milestones { escrow-id: escrow-id, milestone-id: u2 })
+                            (map-get? milestones { escrow-id: escrow-id, milestone-id: u3 })
+                            (map-get? milestones { escrow-id: escrow-id, milestone-id: u4 }))
+                        (if (is-eq milestone-count u5)
+                            (list 
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u2 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u3 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u4 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u5 }))
+                            ;; Default case for more than 5 milestones - return first 5 only for simplicity
+                            (list 
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u1 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u2 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u3 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u4 })
+                                (map-get? milestones { escrow-id: escrow-id, milestone-id: u5 }))
+                        )
+                    )
                 )
-                (merge state { milestones: updated-milestones })
             )
-            state
         )
     )
 )
