@@ -119,25 +119,24 @@
     )
 )
 
-;; @desc Checks if all milestones are paid for an escrow using iterative approach
+;; @desc Checks if all milestones are paid for an escrow
 ;; @param escrow-id The escrow ID
 ;; @param milestone-count Total number of milestones
 ;; @returns Boolean indicating if all are paid
 (define-private (all-milestones-paid (escrow-id uint) (milestone-count uint))
     (let
         (
-            (milestone-list (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
-            (relevant-milestones (filter (lambda (x) (<= x milestone-count)) milestone-list))
-        )
-        (is-eq 
-            (len relevant-milestones)
-            (len (filter (lambda (milestone-id) 
-                (match (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
-                    milestone (get paid milestone)
-                    false
+            (check-results (map (lambda (milestone-id)
+                (if (<= milestone-id milestone-count)
+                    (match (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
+                        milestone (get paid milestone)
+                        false
+                    )
+                    true ;; milestones beyond count are considered "paid" (ignored)
                 )
-            ) relevant-milestones))
+            ) (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20)))
         )
+        (is-eq none (index-of check-results false))
     )
 )
 
@@ -419,12 +418,13 @@
             (let
                 (
                     (milestone-count (get milestones-count escrow))
-                    (milestone-list (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
-                    (relevant-milestones (filter (lambda (x) (<= x milestone-count)) milestone-list))
                 )
                 (some (map (lambda (milestone-id)
-                    (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
-                ) relevant-milestones))
+                    (if (<= milestone-id milestone-count)
+                        (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
+                        none
+                    )
+                ) (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20)))
             )
             none
         )
