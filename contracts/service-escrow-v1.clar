@@ -104,13 +104,27 @@
         )
         (if (< index milestone-count)
             (begin
-                (map-set milestones 
-                    { escrow-id: escrow-id, milestone-id: milestone-id }
-                    { 
-                        description: (unwrap! (element-at descriptions index) ""),
-                        amount: (unwrap! (element-at amounts index) u0), 
-                        paid: false 
-                    }
+                (let
+                    (
+                        (description-opt (element-at descriptions index))
+                        (amount-opt (element-at amounts index))
+                    )
+                    (match description-opt
+                        description
+                        (match amount-opt
+                            amount
+                            (map-set milestones 
+                                { escrow-id: escrow-id, milestone-id: milestone-id }
+                                { 
+                                    description: description,
+                                    amount: amount, 
+                                    paid: false 
+                                }
+                            )
+                            false ;; amount not found
+                        )
+                        false ;; description not found
+                    )
                 )
                 (merge state { current-milestone-id: (+ milestone-id u1) })
             )
