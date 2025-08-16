@@ -126,17 +126,37 @@
 (define-private (all-milestones-paid (escrow-id uint) (milestone-count uint))
     (let
         (
-            (check-results (map (lambda (milestone-id)
-                (if (<= milestone-id milestone-count)
-                    (match (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
-                        milestone (get paid milestone)
-                        false
-                    )
-                    true ;; milestones beyond count are considered "paid" (ignored)
-                )
-            ) (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20)))
+            (milestone-indices (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
+            (paid-count (fold count-paid-milestones milestone-indices { escrow-id: escrow-id, milestone-count: milestone-count, paid-count: u0 }))
         )
-        (is-eq none (index-of check-results false))
+        (is-eq (get paid-count paid-count) milestone-count)
+    )
+)
+
+;; @desc Helper function to count paid milestones
+;; @param milestone-id The milestone ID to check
+;; @param state Current state with counters
+;; @returns Updated state
+(define-private (count-paid-milestones 
+    (milestone-id uint) 
+    (state { escrow-id: uint, milestone-count: uint, paid-count: uint }))
+    (let
+        (
+            (escrow-id (get escrow-id state))
+            (milestone-count (get milestone-count state))
+            (current-paid-count (get paid-count state))
+        )
+        (if (<= milestone-id milestone-count)
+            (match (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
+                milestone 
+                (if (get paid milestone)
+                    (merge state { paid-count: (+ current-paid-count u1) })
+                    state
+                )
+                state
+            )
+            state
+        )
     )
 )
 
@@ -418,15 +438,42 @@
             (let
                 (
                     (milestone-count (get milestones-count escrow))
+                    (milestone-indices (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
+                    (result (fold collect-milestone-details milestone-indices { 
+                        escrow-id: escrow-id, 
+                        milestone-count: milestone-count, 
+                        milestones: (list) 
+                    }))
                 )
-                (some (map (lambda (milestone-id)
-                    (if (<= milestone-id milestone-count)
-                        (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
-                        none
-                    )
-                ) (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20)))
+                (some (get milestones result))
             )
             none
+        )
+    )
+)
+
+;; @desc Helper function to collect milestone details
+;; @param milestone-id The milestone ID to collect
+;; @param state Current state with milestone list
+;; @returns Updated state with milestone added if valid
+(define-private (collect-milestone-details 
+    (milestone-id uint) 
+    (state { escrow-id: uint, milestone-count: uint, milestones: (list 20 (optional { description: (string-utf8 256), amount: uint, paid: bool })) }))
+    (let
+        (
+            (escrow-id (get escrow-id state))
+            (milestone-count (get milestone-count state))
+            (current-milestones (get milestones state))
+        )
+        (if (<= milestone-id milestone-count)
+            (let
+                (
+                    (milestone-data (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id }))
+                    (updated-milestones (unwrap! (as-max-len? (append current-milestones milestone-data) u20) current-milestones))
+                )
+                (merge state { milestones: updated-milestones })
+            )
+            state
         )
     )
 )
