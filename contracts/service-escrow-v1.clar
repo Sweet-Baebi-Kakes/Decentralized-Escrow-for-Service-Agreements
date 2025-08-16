@@ -97,33 +97,25 @@
     )
 )
 
-;; @desc Checks if all milestones are paid for an escrow
+;; @desc Checks if all milestones are paid for an escrow using iterative approach
 ;; @param escrow-id The escrow ID
 ;; @param milestone-count Total number of milestones
 ;; @returns Boolean indicating if all are paid
 (define-private (all-milestones-paid (escrow-id uint) (milestone-count uint))
-    (check-milestones-paid-recursive escrow-id u1 milestone-count)
-)
-
-;; @desc Recursively checks if milestones are paid
-;; @param escrow-id The escrow ID
-;; @param current-milestone Current milestone being checked
-;; @param max-milestone Maximum milestone to check
-;; @returns Boolean indicating if all checked milestones are paid
-(define-private (check-milestones-paid-recursive (escrow-id uint) (current-milestone uint) (max-milestone uint))
-    (if (<= current-milestone max-milestone)
-        (let
-            (
-                (milestone-opt (map-get? milestones { escrow-id: escrow-id, milestone-id: current-milestone }))
-            )
-            (match milestone-opt
-                milestone (if (get paid milestone)
-                            (check-milestones-paid-recursive escrow-id (+ current-milestone u1) max-milestone)
-                            false)
-                false
-            )
+    (let
+        (
+            (milestone-list (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
+            (relevant-milestones (filter (lambda (x) (<= x milestone-count)) milestone-list))
         )
-        true
+        (is-eq 
+            (len relevant-milestones)
+            (len (filter (lambda (milestone-id) 
+                (match (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
+                    milestone (get paid milestone)
+                    false
+                )
+            ) relevant-milestones))
+        )
     )
 )
 
@@ -405,30 +397,15 @@
             (let
                 (
                     (milestone-count (get milestones-count escrow))
+                    (milestone-list (list u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20))
+                    (relevant-milestones (filter (lambda (x) (<= x milestone-count)) milestone-list))
                 )
-                (some (get-milestones-recursive escrow-id u1 milestone-count (list)))
+                (some (map (lambda (milestone-id)
+                    (map-get? milestones { escrow-id: escrow-id, milestone-id: milestone-id })
+                ) relevant-milestones))
             )
             none
         )
-    )
-)
-
-;; @desc Recursively gets milestone details.
-;; @param escrow-id The escrow ID.
-;; @param current Current milestone index.
-;; @param max Maximum milestone index.
-;; @param acc Accumulator list.
-;; @returns List of milestone details.
-(define-private (get-milestones-recursive (escrow-id uint) (current uint) (max uint) (acc (list 20 (optional { description: (string-utf8 256), amount: uint, paid: bool }))))
-    (if (<= current max)
-        (let
-            (
-                (milestone-opt (map-get? milestones { escrow-id: escrow-id, milestone-id: current }))
-                (updated-acc (unwrap! (as-max-len? (append acc milestone-opt) u20) acc))
-            )
-            (get-milestones-recursive escrow-id (+ current u1) max updated-acc)
-        )
-        acc
     )
 )
 
