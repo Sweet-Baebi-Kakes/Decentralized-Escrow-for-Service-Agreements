@@ -63,37 +63,59 @@
 ;; @param escrow-id The escrow ID
 ;; @param amounts List of milestone amounts
 ;; @param descriptions List of milestone descriptions
-;; @param start-index Starting milestone index
 ;; @returns Boolean success
-(define-private (add-milestones (escrow-id uint) (amounts (list 20 uint)) (descriptions (list 20 (string-utf8 256))) (start-index uint))
+(define-private (add-milestones (escrow-id uint) (amounts (list 20 uint)) (descriptions (list 20 (string-utf8 256))))
     (let
         (
-            (milestone-pairs (zip amounts descriptions))
+            (indices (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19))
+            (milestone-count (len amounts))
         )
-        (fold add-single-milestone milestone-pairs { escrow-id: escrow-id, index: start-index })
+        (fold add-milestone-by-index indices { 
+            escrow-id: escrow-id, 
+            amounts: amounts, 
+            descriptions: descriptions, 
+            milestone-count: milestone-count,
+            current-milestone-id: u1
+        })
         true
     )
 )
 
-;; @desc Adds a single milestone
-;; @param milestone-data Tuple containing amount and description
-;; @param state Current state with escrow-id and index
+;; @desc Adds a single milestone by index
+;; @param index Current index in the lists
+;; @param state Current state containing all needed data
 ;; @returns Updated state
-(define-private (add-single-milestone (milestone-data { amount: uint, description: (string-utf8 256) }) (state { escrow-id: uint, index: uint }))
+(define-private (add-milestone-by-index 
+    (index uint) 
+    (state { 
+        escrow-id: uint, 
+        amounts: (list 20 uint), 
+        descriptions: (list 20 (string-utf8 256)), 
+        milestone-count: uint,
+        current-milestone-id: uint
+    }))
     (let
         (
             (escrow-id (get escrow-id state))
-            (current-index (get index state))
+            (amounts (get amounts state))
+            (descriptions (get descriptions state))
+            (milestone-count (get milestone-count state))
+            (milestone-id (get current-milestone-id state))
         )
-        (map-set milestones 
-            { escrow-id: escrow-id, milestone-id: current-index }
-            { 
-                description: (get description milestone-data), 
-                amount: (get amount milestone-data), 
-                paid: false 
-            }
+        (if (< index milestone-count)
+            (begin
+                (map-set milestones 
+                    { escrow-id: escrow-id, milestone-id: milestone-id }
+                    { 
+                        description: (unwrap! (element-at descriptions index) ""),
+                        amount: (unwrap! (element-at amounts index) u0), 
+                        paid: false 
+                    }
+                )
+                (merge state { current-milestone-id: (+ milestone-id u1) })
+            )
+            state
         )
-        { escrow-id: escrow-id, index: (+ current-index u1) }
     )
 )
 
@@ -163,7 +185,7 @@
         })
 
         ;; Add milestones
-        (add-milestones escrow-id milestone-amounts milestone-descriptions u1)
+        (add-milestones escrow-id milestone-amounts milestone-descriptions)
 
         (var-set last-escrow-id escrow-id)
         (print { event: "create-escrow", escrow-id: escrow-id, client: client, provider: provider, total-amount: total-amount })
